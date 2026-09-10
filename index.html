@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模擬考錯題檢討系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #fdfbf7;
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 16px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #fef3c7;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d97706;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="text-amber-950 min-h-screen flex flex-col pb-20">
+
+    <!-- Top Header Bar -->
+    <header class="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-book-open-reader text-2xl sm:text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-wide">國文模擬考錯題檢討</h1>
+                    <p class="text-xs sm:text-sm text-amber-100 opacity-95">認真檢討 ‧ 觀念交流 ‧ 同儕共好</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openTeacherLoginModal()" class="bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 backdrop-blur-sm">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span id="teacherStatusText">教師管理模式</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 flex-grow w-full space-y-6">
+
+        <!-- Student Info & Progress Bar Card -->
+        <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border-2 border-amber-200/80 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <!-- Student Profile Form -->
+            <div class="md:col-span-5 space-y-3 border-b md:border-b-0 md:border-r border-amber-200 md:pr-6 pb-5 md:pb-0">
+                <h2 class="text-sm font-bold text-amber-900 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-amber-600 text-base"></i> 學生個人資訊 (發言將顯示班級座號)
+                </h2>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-amber-900 mb-1">班級</label>
+                        <input type="text" id="studentClass" placeholder="803" class="w-full px-3 py-2 text-base font-bold rounded-xl border-2 border-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-amber-900 mb-1">座號</label>
+                        <input type="number" id="studentSeat" placeholder="31" class="w-full px-3 py-2 text-base font-bold rounded-xl border-2 border-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-amber-900 mb-1">姓名</label>
+                        <input type="text" id="studentName" placeholder="謝小哲" class="w-full px-3 py-2 text-base font-bold rounded-xl border-2 border-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-amber-50/30">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Progress Bar & Upload Button -->
+            <div class="md:col-span-7 space-y-3">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <h2 class="text-sm font-bold text-amber-900 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-amber-600 text-base"></i> 目前檢討進度
+                    </h2>
+                    <span id="progressText" class="text-xs sm:text-sm font-black text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                        已完成 0 / 42 題 (0%)
+                    </span>
+                </div>
+                <div class="w-full bg-amber-100 rounded-full h-3.5 overflow-hidden p-0.5 border border-amber-200">
+                    <div id="progressBar" class="bg-gradient-to-r from-amber-500 to-orange-500 h-2.5 rounded-full transition-all duration-500 w-0"></div>
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                    <div class="flex items-center justify-around sm:justify-start space-x-4 text-xs sm:text-sm font-bold text-amber-950">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600 text-base"></i> 答對: <strong id="statCorrect" class="text-emerald-700 text-base">0</strong></span>
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-xmark text-rose-600 text-base"></i> 答錯: <strong id="statIncorrect" class="text-rose-700 text-base">0</strong></span>
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-question text-stone-400 text-base"></i> 未回答: <strong id="statUnfinished" class="text-stone-600 text-base">42</strong></span>
+                    </div>
+                    <button onclick="submitDataToGas()" id="submitBtn" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl text-sm sm:text-base font-black transition flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer">
+                        <i class="fa-solid fa-paper-plane text-base"></i>
+                        <span>上傳檢討結果</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Question Grid Selection -->
+        <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border-2 border-amber-200/80 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-list-ol text-amber-600 text-xl"></i>
+                    <h2 class="text-lg sm:text-xl font-black text-amber-950">請點擊題號進行訂正與討論 (第 1 ~ 42 題)</h2>
+                </div>
+                <div class="flex items-center space-x-3 text-xs sm:text-sm font-bold text-stone-600">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-stone-200 inline-block border border-stone-300"></span> 未作答</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> 答對</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> 答錯</span>
+                </div>
+            </div>
+
+            <!-- 1-42 Question Buttons Grid -->
+            <div id="questionGrid" class="grid grid-cols-6 sm:grid-cols-7 md:grid-cols-10 lg:grid-cols-14 gap-2.5">
+                <!-- Dynamic Buttons generated by JS -->
+            </div>
+        </section>
+
+        <!-- Question Detail Section -->
+        <section id="detailSection" class="hidden bg-white rounded-2xl p-5 sm:p-7 shadow-xl border-4 border-amber-400 space-y-6 transition-all duration-300">
+            <!-- Title Bar -->
+            <div class="flex justify-between items-start border-b border-amber-200 pb-4">
+                <div>
+                    <span class="bg-amber-100 text-amber-900 text-xs sm:text-sm font-bold px-3 py-1 rounded-full inline-block mb-1.5 border border-amber-300">
+                        題目詳解與同儕討論
+                    </span>
+                    <h3 id="detailQuestionTitle" class="text-2xl sm:text-3xl font-black text-amber-950">
+                        第 1 題
+                    </h3>
+                </div>
+                <button onclick="closeDetail()" class="text-stone-400 hover:text-amber-900 p-2 rounded-xl hover:bg-amber-100 transition text-2xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Student Input Block -->
+            <div class="bg-amber-50/80 p-5 rounded-2xl border-2 border-amber-200 space-y-4">
+                <h4 class="text-sm sm:text-base font-black text-amber-950 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-amber-600 text-lg"></i> 請選擇您本題的作答結果：
+                </h4>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="cursor-pointer flex items-center space-x-3 bg-white px-5 py-3.5 rounded-2xl border-2 border-amber-200 hover:border-emerald-500 transition shadow-sm active:scale-98">
+                        <input type="radio" name="qStatus" value="correct" onchange="onStatusChange('correct')" class="accent-emerald-600 w-6 h-6">
+                        <span class="text-base sm:text-lg font-black text-emerald-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-xl"></i> 我答對了
+                        </span>
+                    </label>
+
+                    <label class="cursor-pointer flex items-center space-x-3 bg-white px-5 py-3.5 rounded-2xl border-2 border-amber-200 hover:border-rose-500 transition shadow-sm active:scale-98">
+                        <input type="radio" name="qStatus" value="incorrect" onchange="onStatusChange('incorrect')" class="accent-rose-600 w-6 h-6">
+                        <span class="text-base sm:text-lg font-black text-rose-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-xmark text-xl"></i> 我答錯了
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Error Reason Selector -->
+                <div id="reasonBlock" class="hidden pt-4 border-t border-amber-200 space-y-3">
+                    <p class="text-sm font-black text-rose-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-question text-rose-600"></i> 請點選答錯的主要原因：
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <button type="button" onclick="selectReason('粗心大意')" class="reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition text-center shadow-sm">
+                            粗心大意
+                        </button>
+                        <button type="button" onclick="selectReason('觀念不熟')" class="reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition text-center shadow-sm">
+                            觀念不熟
+                        </button>
+                        <button type="button" onclick="selectReason('看錯題目')" class="reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition text-center shadow-sm">
+                            看錯題目
+                        </button>
+                        <button type="button" onclick="selectReason('時間不夠')" class="reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition text-center shadow-sm">
+                            時間不夠
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Explanation Content -->
+            <div class="space-y-3">
+                <h4 class="text-sm sm:text-base font-black text-amber-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-lines text-amber-600 text-lg"></i> 本題官方詳解：
+                </h4>
+                <div id="detailExplanation" class="bg-amber-50/40 p-5 rounded-2xl border-2 border-amber-100 text-amber-950 text-base sm:text-lg leading-relaxed whitespace-pre-line font-medium custom-scrollbar max-h-72 overflow-y-auto">
+                    <!-- Text inserted JS -->
+                </div>
+            </div>
+
+            <!-- REAL-TIME PEER DISCUSSION BOARD (GAS Powered with Local Cache) -->
+            <div class="border-t-2 border-amber-200 pt-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-base sm:text-lg font-black text-amber-950 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-amber-600 text-xl"></i> 同學即時解題心得與觀念交流區
+                    </h4>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-300">
+                        <i class="fa-solid fa-shield-halved text-emerald-600"></i> AI 智慧守護 + 快取加速
+                    </span>
+                </div>
+
+                <!-- Discussion Input Form -->
+                <div class="bg-amber-50/60 rounded-2xl p-4 border-2 border-amber-200/90 space-y-3">
+                    <textarea id="commentInput" rows="3" placeholder="分享你的理解想法或解題小撇步（例如：『這題重點在於判斷關鍵字...』）。請保持友善交流，本系統設有 AI 不當發言自動審核。" class="w-full p-3 rounded-xl border-2 border-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm sm:text-base font-medium resize-none bg-white"></textarea>
+                    
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span id="aiCheckNotice" class="text-xs text-amber-800 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-info-circle text-amber-600"></i> 發言將標記您的姓名與班級座號
+                        </span>
+                        <button id="postCommentBtn" onclick="submitDiscussion()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2 rounded-xl text-sm transition flex items-center gap-2 shadow cursor-pointer">
+                            <i class="fa-solid fa-paper-plane"></i> 發布心得
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Discussion List -->
+                <div id="discussionList" class="space-y-3 custom-scrollbar max-h-80 overflow-y-auto pr-1">
+                    <div class="text-center py-6 text-stone-400 text-sm font-bold flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-spinner fa-spin text-amber-600 text-2xl"></i>
+                        <span>載入討論中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between items-center pt-2 border-t border-amber-200">
+                <button id="prevQBtn" onclick="navigateQuestion(-1)" class="px-5 py-3 bg-stone-200 hover:bg-stone-300 text-stone-800 text-sm sm:text-base font-black rounded-xl transition flex items-center gap-2">
+                    <i class="fa-solid fa-chevron-left"></i> 上一題
+                </button>
+                <button id="nextQBtn" onclick="navigateQuestion(1)" class="px-5 py-3 bg-amber-600 hover:bg-amber-700 text-white text-sm sm:text-base font-black rounded-xl transition flex items-center gap-2">
+                    下一題 <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Lower Section: Analytics & Achievements -->
+        <section class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start pt-4">
+            
+            <!-- Concise Pie Chart Analytics -->
+            <div class="md:col-span-6 bg-white rounded-2xl p-5 shadow-sm border-2 border-amber-200/80 space-y-4">
+                <h3 class="text-base font-black text-amber-900 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-orange-500 text-lg"></i> 錯因視覺化統計
+                </h3>
+                <div class="flex flex-col sm:flex-row items-center justify-around gap-4 pt-1">
+                    <div class="relative w-40 h-40 flex-shrink-0">
+                        <canvas id="errorPieChart"></canvas>
+                    </div>
+                    <div id="chartLegendList" class="w-full space-y-2 text-sm font-bold">
+                        <!-- Legend items rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievement Badges Honor Roll -->
+            <div class="md:col-span-6 bg-white rounded-2xl p-5 shadow-sm border-2 border-amber-200/80 space-y-4">
+                <h3 class="text-base font-black text-amber-900 flex items-center gap-2">
+                    <i class="fa-solid fa-award text-amber-500 text-lg"></i> 成就徽章榮譽榜
+                </h3>
+                <div class="grid grid-cols-3 sm:grid-cols-5 gap-2.5" id="badgeContainer">
+                    <!-- Badges rendered via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Custom Modal Popup for Notification -->
+    <div id="customModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border-2 border-amber-300">
+            <div class="flex items-center space-x-3 text-amber-600">
+                <i id="modalIcon" class="fa-solid fa-triangle-exclamation text-3xl"></i>
+                <h3 id="modalTitle" class="text-xl font-black text-amber-950">系統提示</h3>
+            </div>
+            <p id="modalMessage" class="text-stone-700 font-bold leading-relaxed text-sm sm:text-base"></p>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeCustomModal()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2 rounded-xl transition">
+                    確定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Login / Control Modal -->
+    <div id="teacherModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border-2 border-amber-400">
+            <div class="flex items-center space-x-3 text-amber-700">
+                <i class="fa-solid fa-user-gear text-2xl"></i>
+                <h3 class="text-xl font-black text-amber-950">教師管理員驗證</h3>
+            </div>
+            <p class="text-xs text-stone-600 font-medium">請輸入教師管理專屬密碼：</p>
+            <input type="password" id="teacherPinInput" placeholder="請輸入密碼" class="w-full px-4 py-2.5 border-2 border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 font-bold">
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeTeacherModal()" class="bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold px-4 py-2 rounded-xl text-sm transition">
+                    取消
+                </button>
+                <button onclick="verifyTeacherPin()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2 rounded-xl text-sm transition">
+                    登入管理模式
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs sm:text-sm text-amber-800/70 space-y-1">
+        <p class="font-bold">國文模擬考檢討</p>
+    </footer>
+
+    <script>
+        // Local fallback bad word dictionary for immediate local block
+        const LOCAL_BAD_WORDS = [
+            '幹', '幹你娘', '靠北', '三小', '賤', '死', '傻逼', '白痴', '智障', '腦殘', '他媽的', '垃圾', '幹恁娘', '照照鏡子'
+        ];
+
+        // 預設教師管理密碼
+        const TEACHER_PIN = "0131";
+        
+        // 請在此處填入您部署成功的 Google Apps Script 網頁應用程式網址
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz7Zs01Bg8eo8qP5LndtLn5Pk7CSZNgRlEdvHGKzBBgOzm3j-ypZ8s5hlmphMZatrloPQ/exec";
+
+        window.isTeacherMode = false;
+
+        // 【新增優化】：前端討論快取物件，大幅加速讀取體驗
+        let discussionCache = {};
+
+        function invalidateDiscussionCache(qNum) {
+            if (qNum) {
+                delete discussionCache[qNum];
+            } else {
+                discussionCache = {};
+            }
+        }
+
+        const explanations = {
+            1: `1.(A)「剛好」刪去 (B)「抵制」、「拒買」刪一 (C)行將就木:比喻年紀已大，壽命將盡。「快要」刪去`,
+            2: `2.(A)寒、暑假週六不開放 (C)行政大樓僅北側道路禁止機車通行 (D)機車可由學校西側出入口進出`,
+            3: `3.題幹與(C)徒然 (A)不付代價而得到好處 (B)彰明、表明 (D)率直、誠實`,
+            4: `4.題幹指出這支影片宣稱把「爬樓梯」一事變好玩後，大幅提高了爬樓梯的人數，可知該影片旨在傳達將事物趣味化所帶來的影響，故選(A)`,
+            5: `5.(A)望見對方的頸項和背脊。意謂程度與之接近 (B)比喻因眼界大開而驚奇讚嘆。也比喻因能力不及而感到無可奈何 (C)比喻貪得無厭，不知滿足 (D)非常失望`,
+            6: `6.題幹以問句點出應保留老屋的觀點，並說明老屋讓現代人得以體會古人的生活，最後進一步點出老屋在文化藝術史上的重要性，故選(C)`,
+            7: `7. (A)歇「息」 (C)「鼎」力相助 (D)一「鼓」作氣`,
+            8: `8. (A)首聯未寄託個人感慨 (B)頷聯描寫在旭日照耀下山河明淨的模樣 (C)竹與松林並未凋零\n【語譯】清晨時遙望秦川，太陽從東邊的山峰升起。遠近山水景色明淨，彎曲迴旋的城樓一重又一重。秋風吹起家家戶戶的竹叢颯颯作響，五陵一帶的松林蒙上一層寒冷的色彩。遊子興起返鄉的念頭，悲傷的心境如同濃重的霜露。`,
+            9: `9. (A)ㄑㄧˋ (B) ㄙㄨˋ/ㄕㄨㄛˋ (C) ㄆㄧㄠˇ/ㄆㄧㄠ (D)ㄓㄨˋ/ㄓㄨˇ`,
+            10: `10.由「筆畫布局均勻、粗細一致，轉折處的線條圓轉，文字形體偏長」可知該字體為小篆，故選(C)。(A)隸書 (B)行書 (D)楷書`,
+            11: `11.由「切莫惜書」、「須動圈點」可知題幹認為比起過分愛惜書本，將書本藏而不用，更應開卷閱讀並提筆圈點書籍，故選(A)\n【語譯】開始讀古書時，千萬不要愛惜書本，過分的愛惜書本，就會把書置於高樓上不讀。應動手圈點書中的精采處或值得注意處才是，看壞了一本書，可以再去買一本。這是因為愛惜書本是有能力收藏書籍者所做的事，我們窮人沒有這樣的閒暇去仿效。`,
+            12: `12.由「在那裡，物與人呈現的是原始的風貌」、「透過那生活需求的供應地」可知，題幹認為能透過市場觀察到一地的日常樣貌與生活步調，畫線處應填入與此相關的敘述，故選(A)。(B)「熟悉的氣味」、「彷彿自己置身於故鄉」與前文文意不符 (C)「忽略了實用性卻精緻華麗的紀念品」與前文「原始的風貌」、「生活需求的供應地」文意不符 (D)「幽暗悲憐」與前文「生氣蓬勃」、「愉快」的文意不符`,
+            13: `13.(A)形容色彩錯綜，光彩奪目。宜作「斑剝」 (B)承蒙退讓。常用於贏取競賽後，將勝敗歸因於承蒙對方禮讓的謙詞。宜作「讓步」 (C)喜而拍手或憤怒而拍手。宜作「執掌」 (D)觀察、判斷錯誤`,
+            14: `14.(B)漳州極大的龍蝦不過三斤重，比相傳中的龍蝦小，作者是因龍蝦的頭目似龍形而不敢食用 (C)作者在會城未見過龍蝦 (D)漳州龍蝦的頭目似龍形，令作者相當敬畏\n【語譯】相傳福建的龍蝦，最大隻的重達二十多斤，觸鬚長達三尺多，可用來作為枴杖，海上漁民常見到龍蝦。我在會城時未曾看過龍蝦，後來到了漳州見到最大的龍蝦也不過三斤重而已，其頭部、眼睛的模樣實在像龍，讓人望之生畏，不敢食用。後來我在張賡陽的筵席上不小心吃到龍蝦，發現龍蝦的滋味像蟹螯之肉，鮮美的程度超過平常，於是往後再也無法禁止自己吃龍蝦了`,
+            15: `15.(A)(B)(D)會意`,
+            16: `16.由「賞人必酬其功，爵人必甄其德」可知，題幹指出為政者在封賞時必須以功績與品德為依據，而非個人喜好，故選(D)\n【語譯】喜歡一個人就察覺不到他的過失，討厭一個人就看不到他的長處，因此封賞常放縱無節制，百姓容易心生怨恨。所以帝王獎賞人必對應其功績，授與人官爵必鑑別其品德。`,
+            17: `17.甲為打刀，乙為太刀。(A)太刀盛行時間早於打刀 (B)1為腰帶 (C)由「戰爭中使用的武器也從適合乘騎在馬背上揮舞的太刀轉變為適合徒步戰鬥的打刀」可推知 (D)室町時代之前的刀具多以太刀為主`,
+            18: `18.題幹主要說明老人跌倒高死亡率的成因。當自身因素「骨質疏鬆」與外在因素「跌倒」兩者並存時，便容易使老人骨折，進而導致死亡。更進一步探究跌倒的原因，則大部分與肌肉無力有關。故選(A)。`,
+            19: `19.本詩將蜜蜂人性化，描述蜜蜂在辛勤工作的過程中，須克服自然的考驗以及人為的阻礙，然而努力追求理想的結果卻在惡劣環境的影響下，不僅一無所獲，甚至失去回家的方向，詩中不但點出生態問題，也寄寓對現實的生活環境感到無奈之意，故選(B)。`,
+            20: `20.由「雄因自恃其強，不為備，居無何竟為狸所食」可知，雄鴿自以為狸不敢輕犯而不加防備，最後落得被吃掉的下場，故選(A)。\n【語譯】葉侯家獲得兩隻鴿子，將牠們的翅膀綁住，然後畜養在郊野。狸知道牠們不能飛，抓住雌鴿後吃掉牠。雄鴿感到憤怒，張嘴去啄狸，狸大聲吼叫著離開了。沒過幾天，葉侯又獲得一隻雌鴿，狸又來吃掉牠。但是因為先前被啄的緣故，似乎畏懼著雄鴿，不敢靠近牠。雄鴿自以為強大，不做任何防備，沒有多久，最後也被狸吃掉了`,
+            21: `21.(A)題幹未提及 (B)題幹未說明蔥薑蒜成為贈品的原因，亦未提及因氣味強烈而乏人問津 (C)為配料，並非主要的佳肴 (D)由「過去，農家節省，種植什麼吃什麼，在欠缺其他菜蔬時，常有炒一盤蔥白，或一碟青蒜替代其他的青菜」可知`,
+            22: `22.題幹說明歐美的經濟優勢、工業革命的突破發展與糖的生產，是建立在對被販運到歐美的非洲奴隸的壓榨上，藉此反思非洲奴隸遭受剝削的問題，故選(D)`,
+            23: `23.「無日」字面上指沒有太陽，實際上是諷刺官場黑暗，不見光明，故選(C)。\n【語譯】適逢夏季炎熱的月分，某官想找個能避開暑氣的地方。共事的官吏紛紛提議，有人說某座山清靜雅致，有人說某間寺廟清靜閒適。有一位老人上前說道:「深山寺廟雖然好，總是比不上這座官府的辦公大廳，這裡才最涼快。」某官說:「怎麼知道呢?」老人答說:「別的地方都還是有太陽，只有這裡有天空卻沒太陽。」`,
+            24: `24.根據文意脈絡判斷，(甲)後應接(丁)，說明很少到邊塞的詩人因為缺乏在邊塞生活的經驗，因而不寫作邊塞詩；(乙)後應接(丙)，說明去過邊塞的詩人在邊塞的生活體驗。再由末二句的內容，可知應接在(乙)(丙)後，用以說明具有邊塞生活體驗的詩人能夠寫作很多邊塞詩，故選(B)。`,
+            25: `25.由「如果還能乘願再來，當要身體髮膚相受」可知，「我」希望能與父親再續親緣，故選(A)`,
+            26: `26.由「蓋愈窮則愈工」、「殆窮者而後工也」可知，題幹認為文人處於困境時更能寫出巧妙的作品，故選(B)\n【語譯】凡是懷抱著才能，卻無法在世上施展抱負的文人，大多喜歡放逐自我在山巔水涯之間，見到蟲魚草木、風雲鳥獸的形貌種類，往往會探求當中奇特與奧妙之處。當內心積累著種種憂傷愁思、感觸憤慨，就會藉由詩文來寄託諷刺，用來表達被貶謫而羈旅他鄉與失偶的哀嘆，並寫下人們難以言喻的感受。這大概是因為文人處境愈困頓，所寫出來的作品就會愈美好。那麼，並非寫詩使人困頓，大概是困頓失意後才能寫出佳作吧。`,
+            27: `27.由「於宅宴集大將十餘人，錫賚絕厚」、「令曰:『有違者斬!』」可知，安祿山對諸將領施予獎賞與威嚇，使諸將領不敢違背命令，故選(D)\n【語譯】安祿山謀反前兩三天，在府中宴請十幾位將領，並賞賜豐厚的財物。府中大廳放置了一張巨大的地圖，圖中標示各地山川的險易及進攻、掠奪的路線。安祿山給每人一張同樣的地圖，下令:「違背此圖計畫者一律處斬!」這張圖對直到洛陽的軍事行動，標示一應俱全。所有將領都領命而去，不敢出聲。於是安祿山攻陷洛陽，各軍的行進完全遵照圖中的指示。`,
+            28: `28.本文旨在說明臺菜廚師取材各國醬料特色並加以創新融合，使臺菜走出新風貌，故選(D)`,
+            29: `29.(B)臺菜不受傳統框架限制 (C)臺灣廚師放眼國際，早已不以八大菜系為終極目標 (D)文中未提及閩菜具有重視醬料的特色，亦未提及歐洲廚師跨海取法`,
+            30: `30.(D)由「欲望愈來愈多，就這樣被一種營營逐逐的生活模式牢牢困住。殫精竭慮，馬不停蹄，只為了一個又一個的目標」可知`,
+            31: `31.由「惱人的事換個角度看，往往有不同的心情體會」可知，故選(B)。(A)未提及應大膽而謹慎的探尋未知事物 (C)未提及行動前應多收集資訊 (D)未提及將困難化為成長動力的省思`,
+            32: `32.文中畫雙線處承接「褪色的偶像簽名照、大量而零碎的小公仔小模型小卡片、成套的唱片光碟、影碟、精緻繽紛的信紙、鋼珠筆，瞬間齊齊湧了出來」的敘述而來，可知作者認為抽屜中的物品因被遺忘而顯得陌生，在勾起記憶之後，卻又像在路上與初戀對象擦身而過一樣，意識到那些是曾經使人迷戀的東西，而感到親切，故選(C)。`,
+            33: `33.作者於末段抒發感慨，認為隨著時間的推進，漸漸懂得少年時期以為的「愛」，其實只是「迷戀」，故選(B)。`,
+            34: `34.李白為唐代人，彼時尚未有蒸餾酒。酒肆賣的酒會將酒中雜質澄清過濾，經過窖藏，酒精濃度可達五度左右，故選(C)。`,
+            35: `35.(A)蟻綠酒容易因菌而腐敗變質，故古人習慣煮過再喝，並非為去除漂浮物而煮酒 (B)宋代尚無蒸餾酒 (C)由「釀造出中國特色的高度穀物蒸餾酒」可知，蒸餾酒也會以穀物為原料`,
+            36: `36.(A)說明塗鴉藝術創作者個人風格強烈是與其他藝術領域競爭的優勢 (B)點出日本塗鴉客的創作場域、身份多元 (C)意指塗鴉藝術能大規模的影響都市空間，比其他藝術形式的影響力更大`,
+            37: `37.(A)美國幫派會在牆面簽上名字以畫清地盤，文中未提及幫派爭搶地盤時會破壞塗鴉客的創作 (C)Reach以學油畫與學攝影為例，說明塗鴉異於二者之處，文中未提及臺灣塗鴉文化與油畫、攝影融合 (D)塗鴉設計以更多型態出現在生活之中，並能用大規模的方式影響到都市空間`,
+            38: `38.由「他認為以塗鴉為出發點的創作者重視個人風格大於一切」可知，塗鴉客Reach認為塗鴉藝術著重在展現個人風格，故選(B)。(A)文中提及費城與紐約的幫派塗鴉，說明當時的塗鴉形式即是簽名 (C)透過闡述美國塗鴉史，說明都市塗鴉文化的起源要歸根到一九六○年代的費城與紐約 (D)透過塗鴉藝術家布雷克的分析，說明塗鴉藝術家各有風格客戶的選擇極多。`,
+            39: `39.畫雙線處文句指出名勝過多人工裝飾讓山林失去原本的面目，故選(A)`,
+            40: `40.(A)「積以苔蘚」指從更大的視角看獅子林，就像是煤渣堆上積聚苔蘚 (B)白公祠、塔影橋皆為新景點 (C)由「蘇州虎丘之勝，余取後山之千頃雲一處次則劍池而已」可知 (D)僅提及靈岩山是館娃宮故址，但不如天平山、支硎山饒富幽趣\n【語譯】蘇州虎丘的勝景中，我首取後山的千頃雲，其次則是劍池，其他勝景多半借助人工，且被矯豔造作的風格所汙染，早已失去山林本來的面目。即便是新建的白公祠、塔影橋，不過取名雅致罷了。而冶坊濱，我戲改為「野芳濱」，徒具豔麗的外形而已。城中最著名稱的獅子林，雖說是出自倪雲林之手，而且山石玲瓏精巧，古木眾多，然而從更大的視角來看，竟然像是胡亂堆砌的煤炭碎屑，上有積聚的苔蘚，與螻蟻鑿穿的孔穴，完全沒有山林的自然氣勢。以我有限的見識來看，不能體悟其美妙之處。靈岩山是吳王館娃宮故址，上面有西施洞、響屨廊、采香徑等幾處名勝，然而景觀分布紛亂，空曠沒有約束，不像天平山、支硎山格外饒富幽雅的趣味。`,
+            41: `41.(A)由「天才鈍拙」可知士族子弟資質低下，並非文思減退 (B)文中僅提及樂意受士族子弟招待的人會吹捧他的文才並未提及有人向他學習寫文章的方法 (D)文中未提及東萊王欣賞士族子弟的早期作品`,
+            42: `42.(C)本文藉由東萊王懷疑士族子弟的作品不是出於他的構思，經考察後發現確實如此，感嘆不具真才實學者終究會被看穿\n【語譯】有一位官宦世家的子弟，讀過的書僅僅二、三百卷，資質魯鈍笨拙。然而家世富裕，常用酒肉與供賞玩的珍貴物品，結交有名的人士。樂意受他招待的人，一個個不停吹捧他。朝廷以為他是個有才華的人，也曾經派他擔任使節訪問他國。東萊王韓晉明非常愛好文學，懷疑他的作品，多半不是出於自己的構思，於是設置宴席，想當面與他討論並測試他。宴會整天歡樂和諧，滿座都是長於詩文的人，當大家都還在連綴音韻，提筆寫詩之際，他倉卒間就完成作品，卻完全不合乎向來的體制，由於客人們各在深思自己的作品，以至於無人發覺。韓晉明退席後感嘆說:「果真如我所估量。」`
+        };
+
+        let reviews = {};
+        window.currentQ = 1;
+        let pieChart = null;
+        let milestoneTriggered = { 10: false, 20: false, 42: false };
+
+        const badgesDef = [
+            { id: 'b1', name: '檢討起跑', icon: 'fa-shoe-prints', req: 1, desc: '完成第 1 題' },
+            { id: 'b10', name: '檢討新秀', icon: 'fa-seedling', req: 10, desc: '完成 10 題' },
+            { id: 'b20', name: '持之以恆', icon: 'fa-fire', req: 20, desc: '完成 20 題' },
+            { id: 'bBuster', name: '錯題剋星', icon: 'fa-shield-halved', req: 'incorrectsDone', desc: '檢討完錯題' },
+            { id: 'bMaster', name: '檢討達人', icon: 'fa-crown', req: 42, desc: '完成全份 42 題' }
+        ];
+
+        const reasonColors = {
+            '粗心大意': '#f59e0b',
+            '觀念不熟': '#ef4444',
+            '看錯題目': '#3b82f6',
+            '時間不夠': '#8b5cf6'
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            renderQuestionGrid();
+            renderBadges();
+            initPieChart();
+            updateStatsAndChart();
+        });
+
+        function getGasUrl() {
+            return GAS_WEB_APP_URL.trim();
+        }
+
+        function loadFromLocalStorage() {
+            const savedReviews = localStorage.getItem('mock_exam_reviews');
+            if (savedReviews) {
+                try { reviews = JSON.parse(savedReviews); } catch (e) { reviews = {}; }
+            }
+            document.getElementById('studentClass').value = localStorage.getItem('student_class') || '';
+            document.getElementById('studentSeat').value = localStorage.getItem('student_seat') || '';
+            document.getElementById('studentName').value = localStorage.getItem('student_name') || '';
+
+            ['studentClass', 'studentSeat', 'studentName'].forEach(id => {
+                document.getElementById(id).addEventListener('input', (e) => {
+                    localStorage.setItem(id.replace('student', 'student_').toLowerCase(), e.target.value);
+                });
+            });
+        }
+
+        function saveReviews() {
+            localStorage.setItem('mock_exam_reviews', JSON.stringify(reviews));
+            updateStatsAndChart();
+            checkMilestones();
+        }
+
+        function renderQuestionGrid() {
+            const grid = document.getElementById('questionGrid');
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= 42; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => openQuestionDetail(i);
+                
+                const data = reviews[i];
+                let bgClass = 'bg-stone-100 border-stone-300 text-stone-800 hover:bg-amber-100/80';
+                let iconHtml = '';
+
+                if (data) {
+                    if (data.status === 'correct') {
+                        bgClass = 'bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600';
+                        iconHtml = '<i class="fa-solid fa-check text-xs ml-0.5"></i>';
+                    } else if (data.status === 'incorrect') {
+                        bgClass = 'bg-rose-500 border-rose-600 text-white hover:bg-rose-600';
+                        iconHtml = '<i class="fa-solid fa-xmark text-xs ml-0.5"></i>';
+                    }
+                }
+
+                btn.className = `h-12 sm:h-14 rounded-2xl border-2 font-black text-base sm:text-lg transition duration-150 flex flex-col items-center justify-center shadow-sm relative ${bgClass}`;
+                btn.innerHTML = `<span>${i}</span>${iconHtml ? `<span class="absolute top-1 right-1">${iconHtml}</span>` : ''}`;
+                grid.appendChild(btn);
+            }
+        }
+
+        function openQuestionDetail(qNum) {
+            window.currentQ = qNum;
+            document.getElementById('detailQuestionTitle').innerText = `第 ${qNum} 題`;
+            document.getElementById('detailExplanation').innerText = explanations[qNum] || '暫無解析';
+            
+            const detailSec = document.getElementById('detailSection');
+            detailSec.classList.remove('hidden');
+            detailSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            const radioCorrect = document.querySelector('input[name="qStatus"][value="correct"]');
+            const radioIncorrect = document.querySelector('input[name="qStatus"][value="incorrect"]');
+            
+            const data = reviews[qNum];
+            if (data) {
+                if (data.status === 'correct') {
+                    radioCorrect.checked = true;
+                    onStatusChange('correct', false);
+                } else {
+                    radioIncorrect.checked = true;
+                    onStatusChange('incorrect', false);
+                    if (data.reason) {
+                        highlightReasonButton(data.reason);
+                    }
+                }
+            } else {
+                radioCorrect.checked = false;
+                radioIncorrect.checked = false;
+                document.getElementById('reasonBlock').classList.add('hidden');
+                clearReasonButtonHighlights();
+            }
+
+            document.getElementById('prevQBtn').disabled = (qNum === 1);
+            document.getElementById('nextQBtn').disabled = (qNum === 42);
+
+            // Fetch discussion comments with Cache Support
+            fetchDiscussions(qNum);
+        }
+
+        function closeDetail() {
+            document.getElementById('detailSection').classList.add('hidden');
+        }
+
+        function navigateQuestion(step) {
+            const next = window.currentQ + step;
+            if (next >= 1 && next <= 42) {
+                openQuestionDetail(next);
+            }
+        }
+
+        function onStatusChange(status, triggerSave = true) {
+            const reasonBlock = document.getElementById('reasonBlock');
+
+            if (status === 'correct') {
+                reasonBlock.classList.add('hidden');
+                clearReasonButtonHighlights();
+                reviews[window.currentQ] = { status: 'correct', reason: '' };
+                if (triggerSave) saveReviews();
+            } else {
+                reasonBlock.classList.remove('hidden');
+                const existingReason = reviews[window.currentQ]?.reason || '';
+                reviews[window.currentQ] = { status: 'incorrect', reason: existingReason };
+                highlightReasonButton(existingReason);
+                if (triggerSave) saveReviews();
+            }
+            renderQuestionGrid();
+        }
+
+        function selectReason(reason) {
+            reviews[window.currentQ] = { status: 'incorrect', reason: reason };
+            highlightReasonButton(reason);
+            saveReviews();
+            renderQuestionGrid();
+        }
+
+        function highlightReasonButton(reason) {
+            document.querySelectorAll('.reason-btn').forEach(btn => {
+                if (btn.innerText.trim() === reason) {
+                    btn.className = 'reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-rose-500 bg-rose-100 text-rose-900 shadow-md transition text-center';
+                } else {
+                    btn.className = 'reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition text-center shadow-sm';
+                }
+            });
+        }
+
+        function clearReasonButtonHighlights() {
+            document.querySelectorAll('.reason-btn').forEach(btn => {
+                btn.className = 'reason-btn py-3 px-3 text-sm sm:text-base font-black rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition text-center shadow-sm';
+            });
+        }
+
+        function updateStatsAndChart() {
+            const keys = Object.keys(reviews);
+            const totalDone = keys.length;
+            let correctCount = 0;
+            let incorrectCount = 0;
+
+            const reasonCounts = {
+                '粗心大意': 0,
+                '觀念不熟': 0,
+                '看錯題目': 0,
+                '時間不夠': 0
+            };
+
+            keys.forEach(k => {
+                if (reviews[k].status === 'correct') {
+                    correctCount++;
+                } else if (reviews[k].status === 'incorrect') {
+                    incorrectCount++;
+                    const r = reviews[k].reason;
+                    if (r && reasonCounts[r] !== undefined) {
+                        reasonCounts[r]++;
+                    }
+                }
+            });
+
+            document.getElementById('statCorrect').innerText = correctCount;
+            document.getElementById('statIncorrect').innerText = incorrectCount;
+            document.getElementById('statUnfinished').innerText = 42 - totalDone;
+
+            const pct = Math.round((totalDone / 42) * 100);
+            document.getElementById('progressText').innerText = `已完成 ${totalDone} / 42 題 (${pct}%)`;
+            document.getElementById('progressBar').style.width = `${pct}%`;
+
+            if (pieChart) {
+                const labels = Object.keys(reasonCounts);
+                const dataValues = Object.values(reasonCounts);
+                
+                pieChart.data.labels = labels;
+                pieChart.data.datasets[0].data = dataValues;
+                pieChart.update();
+
+                const legendList = document.getElementById('chartLegendList');
+                legendList.innerHTML = '';
+                labels.forEach((label, idx) => {
+                    const cnt = dataValues[idx];
+                    const color = reasonColors[label] || '#f59e0b';
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 rounded-xl bg-amber-50/70 text-sm font-bold border border-amber-200';
+                    div.innerHTML = `
+                        <span class="flex items-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full inline-block shadow-sm" style="background-color: ${color}"></span>
+                            ${label}
+                        </span>
+                        <span class="font-black text-amber-950">${cnt} 題</span>
+                    `;
+                    legendList.appendChild(div);
+                });
+            }
+
+            renderBadges();
+        }
+
+        function initPieChart() {
+            const ctx = document.getElementById('errorPieChart').getContext('2d');
+            pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['粗心大意', '觀念不熟', '看錯題目', '時間不夠'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        function renderBadges() {
+            const totalDone = Object.keys(reviews).length;
+            let incorrectsCount = 0;
+            let incorrectsDone = 0;
+
+            Object.values(reviews).forEach(r => {
+                if (r.status === 'incorrect') {
+                    incorrectsCount++;
+                    if (r.reason) incorrectsDone++;
+                }
+            });
+
+            const container = document.getElementById('badgeContainer');
+            container.innerHTML = '';
+
+            badgesDef.forEach(b => {
+                let unlocked = false;
+                if (typeof b.req === 'number' && totalDone >= b.req) {
+                    unlocked = true;
+                } else if (b.req === 'incorrectsDone' && incorrectsCount > 0 && incorrectsDone === incorrectsCount) {
+                    unlocked = true;
+                }
+
+                const div = document.createElement('div');
+                div.className = `p-2.5 rounded-xl border-2 flex flex-col items-center text-center transition-all ${
+                    unlocked 
+                    ? 'bg-amber-100/90 border-amber-400 text-amber-950 shadow-sm' 
+                    : 'bg-stone-50 border-stone-200 text-stone-400 opacity-50'
+                }`;
+
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full ${unlocked ? 'bg-amber-500 text-white shadow' : 'bg-stone-200 text-stone-400'} flex items-center justify-center mb-1 text-sm font-bold">
+                        <i class="fa-solid ${b.icon}"></i>
+                    </div>
+                    <span class="text-xs font-black leading-tight">${b.name}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function checkMilestones() {
+            const totalDone = Object.keys(reviews).length;
+
+            if (totalDone >= 10 && !milestoneTriggered[10]) {
+                triggerConfetti('完成 10 題檢討！獲得「檢討新秀」徽章！');
+                milestoneTriggered[10] = true;
+            } else if (totalDone >= 20 && !milestoneTriggered[20]) {
+                triggerConfetti('完成 20 題檢討！獲得「持之以恆」徽章！');
+                milestoneTriggered[20] = true;
+            } else if (totalDone === 42 && !milestoneTriggered[42]) {
+                triggerConfetti('🎉 完成全份 42 題檢討！獲得「檢討達人」榮譽！');
+                milestoneTriggered[42] = true;
+            }
+        }
+
+        function triggerConfetti(message) {
+            confetti({
+                particleCount: 90,
+                spread: 70,
+                origin: { y: 0.7 }
+            });
+
+            setTimeout(() => {
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-6 right-6 bg-amber-950 text-amber-50 px-5 py-3 rounded-2xl shadow-2xl z-50 flex items-center space-x-3 text-sm font-black border-2 border-amber-400 animate-bounce';
+                toast.innerHTML = `<i class="fa-solid fa-trophy text-amber-400 text-xl"></i> <span>${message}</span>`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+            }, 200);
+        }
+
+        // 渲染討論清單（拆分獨立函式供 Cache 使用）
+        function renderDiscussionsList(comments, qNum) {
+            const listEl = document.getElementById('discussionList');
+            if (!listEl) return;
+
+            if (!comments || comments.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-6 text-amber-800/60 text-sm font-bold bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+                        <i class="fa-regular fa-comment-dots text-2xl mb-1 text-amber-500 block"></i>
+                        尚無同學發表第 ${qNum} 題的心得，歡迎第一位踴躍發言！
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = '';
+            comments.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-3.5 sm:p-4 rounded-xl border border-amber-200 shadow-sm space-y-2 relative transition hover:border-amber-300';
+                const isTeacher = window.isTeacherMode === true;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-amber-100 text-amber-900 font-bold text-xs px-2.5 py-0.5 rounded-md border border-amber-300">
+                                ${escapeHtml(c.classSeat || '90100')} ${escapeHtml(c.studentName || '同學')}
+                            </span>
+                            <span class="text-xs text-stone-400 font-medium">${formatTime(c.timestamp)}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="likeComment('${c.id}', ${c.likes || 0})" class="text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-amber-200">
+                                <i class="fa-solid fa-thumbs-up text-amber-500"></i>
+                                <span>有幫助 (${c.likes || 0})</span>
+                            </button>
+                            ${isTeacher ? `
+                                <button onclick="deleteComment('${c.id}')" class="text-rose-600 hover:text-rose-800 bg-rose-50 px-2 py-1 rounded-lg text-xs font-bold border border-rose-200" title="教師刪除">
+                                    <i class="fa-solid fa-trash"></i> 刪除
+                                </button>
+                            ` : `
+                                <button onclick="reportComment('${c.id}')" class="text-stone-400 hover:text-rose-500 text-xs p-1" title="檢舉不當內容">
+                                    <i class="fa-solid fa-flag"></i>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                    <p class="text-amber-950 text-sm sm:text-base font-medium leading-relaxed whitespace-pre-line">${escapeHtml(c.comment)}</p>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        async function fetchDiscussions(qNum, forceRefresh = false) {
+            const listEl = document.getElementById('discussionList');
+            if (!listEl) return;
+
+            const gasUrl = getGasUrl();
+            if (!gasUrl) {
+                listEl.innerHTML = `
+                    <div class="text-center py-6 text-amber-800/60 text-sm font-bold bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+                        <i class="fa-solid fa-info-circle text-2xl mb-1 text-amber-500 block"></i>
+                        即時討論區準備中（請老師填入 Apps Script 部署網址即可啟用交流）。
+                    </div>
+                `;
+                return;
+            }
+
+            // 【快取優先】：如果未要求強制刷新，且快取已有資料，直接渲染（0 毫秒延遲）
+            if (!forceRefresh && discussionCache[qNum]) {
+                renderDiscussionsList(discussionCache[qNum], qNum);
+                return;
+            }
+
+            // 若無快取或要求強制刷新，顯示載入動畫
+            listEl.innerHTML = `
+                <div class="text-center py-6 text-stone-400 text-sm font-bold flex flex-col items-center gap-2">
+                    <i class="fa-solid fa-spinner fa-spin text-amber-600 text-2xl"></i>
+                    <span>載入討論中...</span>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`${gasUrl}?action=getDiscussions&q=${qNum}`);
+                const data = await res.json();
+
+                // 寫入快取
+                discussionCache[qNum] = data.comments || [];
+                
+                // 渲染畫面
+                renderDiscussionsList(discussionCache[qNum], qNum);
+            } catch (err) {
+                console.error("Fetch discussions error:", err);
+                listEl.innerHTML = `
+                    <div class="text-center py-4 text-rose-600 text-xs font-bold">
+                        無法連線至 GAS 取得討論，請確認 Apps Script 已部署為「任何人」均可存取。
+                    </div>
+                `;
+            }
+        }
+
+        async function submitDiscussion() {
+            const className = document.getElementById('studentClass').value.trim();
+            const seatNum = document.getElementById('studentSeat').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            const commentInput = document.getElementById('commentInput');
+            const commentText = commentInput.value.trim();
+            const gasUrl = getGasUrl();
+
+            if (!gasUrl) {
+                showCustomModal('系統未設定', '討論區服務維護中，請稍後再試。', 'fa-wrench');
+                return;
+            }
+
+            if (!className || !seatNum || !studentName) {
+                showCustomModal('未填寫個人資料', '發布討論前，請先於頁面上方輸入您的「班級」、「座號」與「姓名」！', 'fa-id-card');
+                return;
+            }
+
+            if (!commentText) {
+                showCustomModal('未輸入內容', '請先輸入您對本題的理解或解題想法！', 'fa-pen-to-square');
+                return;
+            }
+
+            if (commentText.length < 4) {
+                showCustomModal('內容過短', '請至少輸入 4 個字以上的完整心得或解釋說明喔！', 'fa-triangle-exclamation');
+                return;
+            }
+
+            // Local keyword safety filter check
+            const hasLocalBadWord = LOCAL_BAD_WORDS.some(word => commentText.includes(word));
+            if (hasLocalBadWord) {
+                showCustomModal('言論含有不當詞彙', '系統偵測到發言中包含粗話或不當用語，請修正為理性溫和的解題討論內容。', 'fa-ban');
+                return;
+            }
+
+            const btn = document.getElementById('postCommentBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>AI 安全審核中...</span>`;
+
+            // Step 2: Gemini AI Safety Check
+            const isSafe = await checkTextSafetyWithGemini(commentText);
+
+            if (!isSafe) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 發布心得`;
+                showCustomModal('未通過 AI 安全審核', 'Gemini AI 偵測到此言論可能含有挑釁、不雅用語、粗話或人身攻擊，無法發布。請共同維護乾淨優質的學習環境！', 'fa-shield-cat');
+                return;
+            }
+
+            // Step 3: Write to GAS Google Sheet
+            const classSeatStr = `${className}${seatNum.padStart(2, '0')}`;
+            const payload = {
+                action: 'addComment',
+                questionId: window.currentQ,
+                studentName: studentName,
+                classSeat: classSeatStr,
+                comment: commentText,
+                timestamp: Date.now()
+            };
+
+            try {
+                await fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                commentInput.value = '';
+                showCustomModal('發布成功', '您的解題心得已送出分享！', 'fa-circle-check');
+                
+                // 清除該題快取並重新載入最新討論
+                invalidateDiscussionCache(window.currentQ);
+                setTimeout(() => fetchDiscussions(window.currentQ, true), 1000);
+            } catch (err) {
+                console.error("GAS comment add error:", err);
+                showCustomModal('發布失敗', '無法連接至伺服器，請稍後再試。', 'fa-triangle-exclamation');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 發布心得`;
+            }
+        }
+
+        async function likeComment(commentId, currentLikes) {
+            const gasUrl = getGasUrl();
+            if (!gasUrl) return;
+            
+            try {
+                await fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'likeComment', commentId: commentId })
+                });
+                invalidateDiscussionCache(window.currentQ);
+                setTimeout(() => fetchDiscussions(window.currentQ, true), 1000);
+            } catch (e) {
+                console.error("Error liking comment:", e);
+            }
+        }
+
+        async function deleteComment(commentId) {
+            if (!window.isTeacherMode) return;
+            const gasUrl = getGasUrl();
+            if (!gasUrl) return;
+
+            try {
+                await fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'deleteComment', commentId: commentId })
+                });
+                showCustomModal('成功刪除', '已要求伺服器移除該筆違規發言！', 'fa-circle-check');
+                invalidateDiscussionCache(window.currentQ);
+                setTimeout(() => fetchDiscussions(window.currentQ, true), 1000);
+            } catch (e) {
+                console.error("Error deleting comment:", e);
+            }
+        }
+
+        function reportComment(commentId) {
+            showCustomModal('已收到檢舉', '感謝您的即時回報，教師將會審查該筆發言。', 'fa-shield-halved');
+        }
+
+        async function checkTextSafetyWithGemini(userText) {
+            const apiKey = ""; // Handled automatically by system
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `你是一個國中/高中學生學習網站的優質言論審查員。請審查學生提交的內容，判斷是否包含以下任何一項不當言論：
+1. 髒話、粗話、猥褻或性暗示用語
+2. 人身攻擊、霸凌、挑釁、嘲諷他人
+3. 政治敏感話題、仇恨言論或暴力隱喻
+4. 無意義的亂碼、連續洗板廢文
+
+請嚴格審查，如果文字完全正常、是在討論學術或正向交流，請回傳 {"safe": true}。若含有不當內容，請回傳 {"safe": false}。請務必只輸出純 JSON 物件格式。`;
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: `請審查以下學生留言：\n"${userText}"` }]
+                    }
+                ],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "safe": { "type": "BOOLEAN" }
+                        },
+                        required: ["safe"]
+                    }
+                }
+            };
+
+            try {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) return true;
+                
+                const result = await res.json();
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (jsonText) {
+                    const parsed = JSON.parse(jsonText);
+                    return parsed.safe === true;
+                }
+                return true;
+            } catch (e) {
+                console.warn("Gemini safety check failed, falling back to local:", e);
+                return true;
+            }
+        }
+
+        // Modal Helpers
+        function showCustomModal(title, msg, iconClass = 'fa-circle-info') {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = msg;
+            document.getElementById('modalIcon').className = `fa-solid ${iconClass} text-3xl`;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeCustomModal() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+
+        function openTeacherLoginModal() {
+            if (window.isTeacherMode) {
+                window.isTeacherMode = false;
+                document.getElementById('teacherStatusText').innerText = "教師管理模式";
+                showCustomModal('已切換模式', '已退出教師管理模式。', 'fa-user');
+                // 重新渲染當前題目的留言（顯示/隱藏刪除按鈕）
+                if (window.currentQ && discussionCache[window.currentQ]) {
+                    renderDiscussionsList(discussionCache[window.currentQ], window.currentQ);
+                }
+            } else {
+                document.getElementById('teacherModal').classList.remove('hidden');
+            }
+        }
+
+        function closeTeacherModal() {
+            document.getElementById('teacherModal').classList.add('hidden');
+        }
+
+        function verifyTeacherPin() {
+            const pin = document.getElementById('teacherPinInput').value;
+            if (pin === TEACHER_PIN) {
+                window.isTeacherMode = true;
+                document.getElementById('teacherStatusText').innerText = "管理者 (模式中)";
+                closeTeacherModal();
+                document.getElementById('teacherPinInput').value = '';
+                showCustomModal('驗證成功', '已啟用教師管理權限，您現在可以刪除違規討論內容！', 'fa-user-check');
+                // 重新渲染當前題目的留言（顯示/隱藏刪除按鈕）
+                if (window.currentQ && discussionCache[window.currentQ]) {
+                    renderDiscussionsList(discussionCache[window.currentQ], window.currentQ);
+                }
+            } else {
+                showCustomModal('驗證失敗', '密碼輸入錯誤，請重新確認！', 'fa-circle-xmark');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(Number(timestamp));
+            return `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+        }
+
+        // Google Apps Script Data Submission
+        async function submitDataToGas() {
+            let gasUrl = getGasUrl();
+            
+            const className = document.getElementById('studentClass').value.trim();
+            const seatNum = document.getElementById('studentSeat').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+
+            if (!className || !seatNum || !studentName) {
+                showCustomModal('提示', '請先填寫您的「班級」、「座號」與「姓名」！', 'fa-id-card');
+                return;
+            }
+
+            const totalDone = Object.keys(reviews).length;
+            if (totalDone === 0) {
+                showCustomModal('提示', '請至少完成 1 題點選訂正後再傳送！', 'fa-pen-to-square');
+                return;
+            }
+
+            if (!gasUrl) {
+                showCustomModal('系統提示', '尚未設定後端 Apps Script 連結，請通知老師設定後再上傳。', 'fa-triangle-exclamation');
+                return;
+            }
+
+            const reasonCounts = {};
+            let correctCount = 0;
+            let incorrectCount = 0;
+            const incorrectQuestionsList = [];
+
+            Object.keys(reviews).forEach(qNum => {
+                const item = reviews[qNum];
+                if (item.status === 'correct') {
+                    correctCount++;
+                } else if (item.status === 'incorrect') {
+                    incorrectCount++;
+                    incorrectQuestionsList.push(Number(qNum));
+                    if (item.reason) {
+                        reasonCounts[item.reason] = (reasonCounts[item.reason] || 0) + 1;
+                    }
+                }
+            });
+
+            incorrectQuestionsList.sort((a, b) => a - b);
+            const incorrectQuestionsFormatted = incorrectQuestionsList.length > 0 
+                ? incorrectQuestionsList.map(q => `第 ${q} 題`).join(', ') 
+                : '無錯題';
+
+            let primaryReason = '無錯題';
+            let maxCnt = 0;
+            for (let [k, v] of Object.entries(reasonCounts)) {
+                if (v > maxCnt) {
+                    maxCnt = v;
+                    primaryReason = k;
+                }
+            }
+
+            const payload = {
+                action: 'submitReview',
+                className,
+                seatNum,
+                studentName,
+                correctCount,
+                incorrectCount,
+                incorrectQuestions: incorrectQuestionsFormatted,
+                primaryReason,
+                reviews
+            };
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>傳送中...</span>`;
+
+            try {
+                await fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                triggerConfetti('訂正結果已成功傳送給老師！');
+            } catch (err) {
+                console.error(err);
+                showCustomModal('傳送失敗', '連線異常：' + err.toString(), 'fa-circle-xmark');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-base"></i> <span>上傳檢討結果</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
